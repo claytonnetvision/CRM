@@ -93,6 +93,7 @@ const clientsRouter = router({
       searchTerm: z.string().optional(),
       city: z.string().optional(),
       isActive: z.boolean().optional(),
+      consultantId: z.number().optional(),
     }).optional())
     .query(async ({ ctx, input }) => {
       try {

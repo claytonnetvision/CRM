@@ -128,6 +128,7 @@ export async function getClientsByUserId(userId: number, filters?: {
   searchTerm?: string;
   city?: string;
   isActive?: boolean;
+  consultantId?: number;
 }) {
   const db = await getDb();
   if (!db) return [];
@@ -147,6 +148,10 @@ export async function getClientsByUserId(userId: number, filters?: {
   
   if (filters?.isActive !== undefined) {
     conditions.push(eq(clients.isActive, filters.isActive));
+  }
+  
+  if (filters?.consultantId !== undefined) {
+    conditions.push(eq(clients.consultantId, filters.consultantId));
   }
   
   const results = await db.select().from(clients).where(

@@ -37,6 +37,7 @@ export default function ClientsFiltered() {
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedConsultant, setSelectedConsultant] = useState<number | null>(null);
 
   // Mapear a rota para o status do banco
   const statusMap: Record<string, string> = {
@@ -48,10 +49,14 @@ export default function ClientsFiltered() {
 
   const dbStatus = statusParam ? statusMap[statusParam] : "contacted";
 
+  // Buscar consultores
+  const { data: consultants = [] } = trpc.consultants.list.useQuery();
+
   const { data: clients = [], isLoading: loadingClients, refetch } = trpc.clients.list.useQuery({
     searchTerm,
     status: dbStatus,
     city: selectedCity || undefined,
+    consultantId: selectedConsultant || undefined,
   });
 
   const updateClientMutation = trpc.clients.update.useMutation({
@@ -89,10 +94,16 @@ export default function ClientsFiltered() {
     }
   };
 
-  // Extrair cidades únicas dos clientes
+  // Extrair cidades e consultores únicos dos clientes
   const cities = useMemo(() => {
     return Array.from(new Set(clients.map(c => c.city).filter(Boolean))) as string[];
   }, [clients]);
+
+  // Filtrar consultores que têm clientes neste status
+  const consultorsWithClients = useMemo(() => {
+    const consultorIds = new Set(clients.map(c => c.consultantId).filter(Boolean));
+    return consultants.filter(c => consultorIds.has(c.id));
+  }, [clients, consultants]);
 
   // Títulos por status
   const statusTitles: Record<string, { title: string; description: string }> = {
@@ -135,8 +146,8 @@ export default function ClientsFiltered() {
 
       {/* Filtros */}
       <Card className="p-4">
-        <div className="flex gap-4">
-          <div className="flex-1">
+        <div className="flex gap-4 flex-wrap">
+          <div className="flex-1 min-w-64">
             <div className="relative">
               <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
               <Input
@@ -157,6 +168,21 @@ export default function ClientsFiltered() {
                 {cities.map((city) => (
                   <SelectItem key={city} value={city}>
                     {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {consultorsWithClients.length > 0 && (
+            <Select value={selectedConsultant?.toString() || "todos"} onValueChange={(v) => setSelectedConsultant(v === "todos" ? null : parseInt(v))}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Todos os consultores" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os consultores</SelectItem>
+                {consultorsWithClients.map((consultant) => (
+                  <SelectItem key={consultant.id} value={consultant.id.toString()}>
+                    {consultant.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -189,6 +215,7 @@ export default function ClientsFiltered() {
                   <TableHead>Endereço</TableHead>
                   <TableHead>Clientes</TableHead>
                   <TableHead>Contratados</TableHead>
+                  <TableHead>Consultor</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -214,6 +241,9 @@ export default function ClientsFiltered() {
                     </TableCell>
                     <TableCell className="text-center">{client.totalClients || 0}</TableCell>
                     <TableCell className="text-center">{client.contractedClients || 0}</TableCell>
+                    <TableCell className="text-sm">
+                      {consultants.find(c => c.id === client.consultantId)?.name || "Sem consultor"}
+                    </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
