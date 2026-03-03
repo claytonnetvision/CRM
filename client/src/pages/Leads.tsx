@@ -18,6 +18,9 @@ export default function Leads() {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [selectedConsultant, setSelectedConsultant] = useState<string>("");
+
+  const { data: consultants = [] } = trpc.consultants.list.useQuery();
 
   const { data: leads, isLoading, refetch } = trpc.leads.list.useQuery({
     status: statusFilter,
@@ -63,6 +66,7 @@ export default function Leads() {
     setSelectedLead(lead);
     setClientName(lead.name);
     setClientPhone(lead.phone || "");
+    setSelectedConsultant("");
     setIsImportDialogOpen(true);
   };
 
@@ -82,6 +86,7 @@ export default function Leads() {
           address: selectedLead.address || "",
           city: "Belo Horizonte",
           contractStatus: "contacted",
+          consultantId: selectedConsultant ? parseInt(selectedConsultant) : null,
         },
       });
     } catch (error) {
@@ -266,6 +271,22 @@ export default function Leads() {
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Consultor Responsável</label>
+                  <Select value={selectedConsultant} onValueChange={setSelectedConsultant}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um consultor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {consultants.map((consultant) => (
+                        <SelectItem key={consultant.id} value={consultant.id.toString()}>
+                          {consultant.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
