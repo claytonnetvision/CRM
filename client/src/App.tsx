@@ -10,6 +10,7 @@ import Financials from "@/pages/Financials";
 import CommissionsReport from "@/pages/CommissionsReport";
 import Payments from "@/pages/Payments";
 import Consultants from "@/pages/Consultants";
+import ClientsFiltered from "@/pages/ClientsFiltered";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -41,6 +42,10 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/clients" component={Dashboard} />
+        <Route path="/clients/filtered" component={ClientsFiltered} />
+        <Route path="/clients/pending" component={ClientsFiltered} />
+        <Route path="/clients/contracted" component={ClientsFiltered} />
+        <Route path="/clients/awaiting" component={ClientsFiltered} />
         <Route path="/clients/new" component={ClientForm} />
         <Route path="/clients/:id/edit" component={ClientForm} />
         <Route path="/clients/:id" component={ClientDetails} />

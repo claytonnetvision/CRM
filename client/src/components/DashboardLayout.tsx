@@ -30,7 +30,12 @@ import { trpc } from "@/lib/trpc";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Users, label: "Clientes", path: "/clients" },
+  { icon: Users, label: "Clientes", path: "/clients", submenu: [
+    { label: "Filtrados", path: "/clients/filtered" },
+    { label: "Pendentes", path: "/clients/pending" },
+    { label: "Contratados", path: "/clients/contracted" },
+    { label: "Em Outro Momento", path: "/clients/awaiting" },
+  ]},
   { icon: MapPin, label: "Buscar Boxes", path: "/leads/search" },
   { icon: FileText, label: "Leads", path: "/leads" },
   { icon: DollarSign, label: "Financeiro", path: "/financials" },
