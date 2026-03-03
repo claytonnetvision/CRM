@@ -81,7 +81,7 @@ export default function Leads() {
           boxName: selectedLead.name,
           address: selectedLead.address || "",
           city: "Belo Horizonte",
-          contractStatus: "pending",
+          contractStatus: "contacted",
         },
       });
     } catch (error) {

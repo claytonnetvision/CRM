@@ -29,6 +29,23 @@ import { useState, useMemo } from "react";
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 
+// Cores para consultores
+const CONSULTANT_COLORS = [
+  { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-300" },
+  { bg: "bg-purple-100", text: "text-purple-800", border: "border-purple-300" },
+  { bg: "bg-pink-100", text: "text-pink-800", border: "border-pink-300" },
+  { bg: "bg-green-100", text: "text-green-800", border: "border-green-300" },
+  { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-300" },
+  { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
+  { bg: "bg-indigo-100", text: "text-indigo-800", border: "border-indigo-300" },
+  { bg: "bg-cyan-100", text: "text-cyan-800", border: "border-cyan-300" },
+];
+
+function getConsultantColor(consultantId: number | null | undefined): typeof CONSULTANT_COLORS[0] {
+  if (!consultantId) return { bg: "bg-gray-100", text: "text-gray-800", border: "border-gray-300" };
+  return CONSULTANT_COLORS[consultantId % CONSULTANT_COLORS.length];
+}
+
 export default function ClientsFiltered() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
@@ -242,7 +259,13 @@ export default function ClientsFiltered() {
                     <TableCell className="text-center">{client.totalClients || 0}</TableCell>
                     <TableCell className="text-center">{client.contractedClients || 0}</TableCell>
                     <TableCell className="text-sm">
-                      {consultants.find(c => c.id === client.consultantId)?.name || "Sem consultor"}
+                      {client.consultantId ? (
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getConsultantColor(client.consultantId).bg} ${getConsultantColor(client.consultantId).text} ${getConsultantColor(client.consultantId).border}`}>
+                          {consultants.find(c => c.id === client.consultantId)?.name || "Sem consultor"}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">Sem consultor</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
