@@ -25,19 +25,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Plus, Search, MoreVertical, Loader2, Phone, MapPin } from "lucide-react";
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useMemo } from "react";
+import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 
 export default function ClientsFiltered() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const [, params] = useRoute("/clients/:status");
+  const statusParam = params?.status as "filtered" | "pending" | "contracted" | "awaiting" | undefined;
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
 
+  // Mapear a rota para o status do banco
+  const statusMap: Record<string, string> = {
+    filtered: "contacted",
+    pending: "pending",
+    contracted: "contracted",
+    awaiting: "awaiting_response",
+  };
+
+  const dbStatus = statusParam ? statusMap[statusParam] : "contacted";
+
   const { data: clients = [], isLoading: loadingClients, refetch } = trpc.clients.list.useQuery({
     searchTerm,
-    status: "filtered",
+    status: dbStatus,
     city: selectedCity || undefined,
   });
 
@@ -46,12 +59,18 @@ export default function ClientsFiltered() {
       toast.success("Status atualizado!");
       refetch();
     },
+    onError: (error) => {
+      toast.error(`Erro: ${error.message}`);
+    },
   });
 
   const deleteClientMutation = trpc.clients.delete.useMutation({
     onSuccess: () => {
       toast.success("Cliente removido!");
       refetch();
+    },
+    onError: (error) => {
+      toast.error(`Erro: ${error.message}`);
     },
   });
 
@@ -71,17 +90,39 @@ export default function ClientsFiltered() {
   };
 
   // Extrair cidades únicas dos clientes
-  const cities = Array.from(new Set(clients.map(c => c.city).filter(Boolean))) as string[];
+  const cities = useMemo(() => {
+    return Array.from(new Set(clients.map(c => c.city).filter(Boolean))) as string[];
+  }, [clients]);
+
+  // Títulos por status
+  const statusTitles: Record<string, { title: string; description: string }> = {
+    filtered: {
+      title: "Clientes Filtrados",
+      description: "Clientes importados do Leads (aguardando classificação)",
+    },
+    pending: {
+      title: "Clientes Pendentes",
+      description: "Aguardando resposta ou próximo contato",
+    },
+    contracted: {
+      title: "Clientes Contratados",
+      description: "Clientes com contrato ativo",
+    },
+    awaiting: {
+      title: "Em Outro Momento",
+      description: "Clientes que retornarão em outro momento",
+    },
+  };
+
+  const currentStatus = statusTitles[statusParam || "filtered"];
 
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Clientes Filtrados</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Clientes importados do Leads (aguardando classificação)
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">{currentStatus.title}</h1>
+          <p className="text-sm text-gray-500 mt-1">{currentStatus.description}</p>
         </div>
         <Button
           onClick={() => navigate("/clients/new")}
@@ -106,19 +147,21 @@ export default function ClientsFiltered() {
               />
             </div>
           </div>
-          <Select value={selectedCity || ""} onValueChange={(v) => setSelectedCity(v || null)}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Todas as cidades" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todas as cidades</SelectItem>
-              {cities.map((city) => (
-                <SelectItem key={city} value={city}>
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {cities.length > 0 && (
+            <Select value={selectedCity || "todas"} onValueChange={(v) => setSelectedCity(v === "todas" ? null : v)}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Todas as cidades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as cidades</SelectItem>
+                {cities.map((city) => (
+                  <SelectItem key={city} value={city}>
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </Card>
 
@@ -130,9 +173,9 @@ export default function ClientsFiltered() {
           </div>
         ) : clients.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
-            <p className="text-gray-500 mb-2">Nenhum cliente filtrado encontrado</p>
+            <p className="text-gray-500 mb-2">Nenhum cliente encontrado</p>
             <p className="text-sm text-gray-400">
-              Importe clientes do Leads para vê-los aqui
+              Nenhum cliente com este status no momento
             </p>
           </div>
         ) : (
@@ -166,7 +209,7 @@ export default function ClientsFiltered() {
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <MapPin className="w-4 h-4" />
-                        {client.address}
+                        {client.address || "-"}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">{client.totalClients || 0}</TableCell>
@@ -193,6 +236,11 @@ export default function ClientsFiltered() {
                             onClick={() => handleStatusChange(client.id, "pending")}
                           >
                             → Pendente
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleStatusChange(client.id, "contacted")}
+                          >
+                            → Filtrado
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleStatusChange(client.id, "contracted")}

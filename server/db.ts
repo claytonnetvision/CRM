@@ -136,7 +136,9 @@ export async function getClientsByUserId(userId: number, filters?: {
   const conditions: any[] = [];
   
   if (filters?.status) {
-    conditions.push(eq(clients.contractStatus, filters.status as any));
+    // Mapear "filtered" para "contacted" (status real no banco)
+    const mappedStatus = filters.status === "filtered" ? "contacted" : filters.status;
+    conditions.push(eq(clients.contractStatus, mappedStatus as any));
   }
   
   if (filters?.city) {
